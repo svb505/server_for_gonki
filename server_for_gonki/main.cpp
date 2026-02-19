@@ -62,6 +62,8 @@ int main(){
                 p.state.z = 0;  
                 p.state.angle = 0;
                 p.state.speed = 0;
+                p.state.lastCheckpoint = checkpoints.size() - 1;
+                p.state.lap = 0;
 
                 players[event.peer] = p;
 
