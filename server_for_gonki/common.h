@@ -15,6 +15,10 @@ struct CarState
     float z;
     float speed;
     float angle;
+
+    int lap = 0;
+    int lastCheckpoint = 0;
+    float progress = 0.0f;
 };
 
 struct ClientStatePacket

@@ -2,11 +2,15 @@
 #include <iostream>
 #include <unordered_map>
 #include "common.h"
+#include <algorithm>
+#include <vector>
+#include "myMath.h"
 
 struct Player{
     ENetPeer* peer;
     CarState state;
 };
+
 
 std::unordered_map<ENetPeer*, Player> players;
 uint32_t nextId = 1;
@@ -25,6 +29,7 @@ void SendSnapshot(ENetHost* server){
 
     enet_host_broadcast(server, 0, packet);
 }
+
 
 int main(){
     enet_initialize();
@@ -71,19 +76,24 @@ int main(){
                 break;
             }
 
-            case ENET_EVENT_TYPE_RECEIVE:{
+            case ENET_EVENT_TYPE_RECEIVE: {
                 PacketType type = *(PacketType*)event.packet->data;
 
-                if (type == PacketType::ClientState){
+                if (type == PacketType::ClientState) {
                     auto* packet = (ClientStatePacket*)event.packet->data;
+                    players[event.peer].state.x = packet->state.x;
+                    players[event.peer].state.y = packet->state.y;
+                    players[event.peer].state.z = packet->state.z;
+                    players[event.peer].state.angle = packet->state.angle;
+                    players[event.peer].state.speed = packet->state.speed;
 
-                    players[event.peer].state = packet->state;
-                    packet->state.id = players[event.peer].state.id;
+                    updateProgress(players[event.peer].state, checkpoints);
                 }
 
                 enet_packet_destroy(event.packet);
                 break;
             }
+
 
             case ENET_EVENT_TYPE_DISCONNECT:
                 players.erase(event.peer);
