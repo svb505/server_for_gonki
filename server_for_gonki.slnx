@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="server_for_gonki/server_for_gonki.vcxproj" Id="aa7d7b70-bae9-4cc7-87a0-87625f3421c6" />
+</Solution>
