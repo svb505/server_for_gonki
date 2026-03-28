@@ -4,11 +4,15 @@
 #include "common.h"
 #include <algorithm>
 #include <vector>
+#include <deque>
 #include "myMath.h"
+
+const size_t HISTORY_SIZE = 10;
 
 struct Player{
     ENetPeer* peer;
     CarState state;
+    std::deque<CarState> history; 
 };
 
 
@@ -22,7 +26,8 @@ void SendSnapshot(ENetHost* server){
 
     for (auto& [peer, player] : players){
         if (snap.count >= MAX_PLAYERS) break;
-        snap.cars[snap.count++] = player.state;
+        CarState correctState = player.history.back();
+        snap.cars[snap.count++] = correctState;
     }
 
     ENetPacket* packet = enet_packet_create(&snap,sizeof(SnapshotPacket),ENET_PACKET_FLAG_UNSEQUENCED);
@@ -83,11 +88,17 @@ int main(){
 
                 if (type == PacketType::ClientState) {
                     auto* packet = (ClientStatePacket*)event.packet->data;
-                    players[event.peer].state.x = packet->state.x;
-                    players[event.peer].state.y = packet->state.y;
-                    players[event.peer].state.z = packet->state.z;
-                    players[event.peer].state.angle = packet->state.angle;
-                    players[event.peer].state.speed = packet->state.speed;
+                    Player& p = players[event.peer];
+
+                    p.state.x = packet->state.x;
+                    p.state.y = packet->state.y;
+                    p.state.z = packet->state.z;
+                    p.state.angle = packet->state.angle;
+                    p.state.speed = packet->state.speed;
+
+                    p.history.push_back(p.state);
+                    if (p.history.size() > HISTORY_SIZE)
+                        p.history.pop_front();
 
                     updateProgress(players[event.peer].state, checkpoints);
                 }
