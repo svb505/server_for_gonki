@@ -15,7 +15,6 @@ struct Player{
     std::deque<CarState> history; 
 };
 
-
 std::unordered_map<ENetPeer*, Player> players;
 uint32_t nextId = 1;
 
@@ -26,7 +25,9 @@ void SendSnapshot(ENetHost* server){
 
     for (auto& [peer, player] : players){
         if (snap.count >= MAX_PLAYERS) break;
-        CarState correctState = player.history.back();
+        CarState correctState = player.state;
+
+        if (!player.history.empty()) correctState = player.history.back();
         snap.cars[snap.count++] = correctState;
     }
 
@@ -97,8 +98,7 @@ int main(){
                     p.state.speed = packet->state.speed;
 
                     p.history.push_back(p.state);
-                    if (p.history.size() > HISTORY_SIZE)
-                        p.history.pop_front();
+                    if (p.history.size() > HISTORY_SIZE) p.history.pop_front();
 
                     updateProgress(players[event.peer].state, checkpoints);
                 }
