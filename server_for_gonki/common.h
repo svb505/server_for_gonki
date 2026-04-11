@@ -1,9 +1,16 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
 
-enum class PacketType : uint8_t{
+enum class PacketType : uint8_t {
     ClientState = 1,
-    Snapshot = 2
+    Snapshot = 2,
+    Chat = 3  
+};
+
+struct ChatPacket {
+    PacketType type;
+    char msg[256];
 };
 
 struct CarState{

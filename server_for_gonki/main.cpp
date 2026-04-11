@@ -6,6 +6,7 @@
 #include <vector>
 #include <deque>
 #include "myMath.h"
+#include <cstring>
 
 const size_t HISTORY_SIZE = 10;
 
@@ -17,23 +18,35 @@ struct Player{
 
 std::unordered_map<ENetPeer*, Player> players;
 uint32_t nextId = 1;
+std::vector<std::string> messages;
 
-void SendSnapshot(ENetHost* server){
+ChatPacket lastChat{};
+bool hasChat = false;
+
+void SendSnapshot(ENetHost* server) {
     SnapshotPacket snap{};
     snap.type = PacketType::Snapshot;
     snap.count = 0;
 
-    for (auto& [peer, player] : players){
+    for (auto& [peer, player] : players) {
         if (snap.count >= MAX_PLAYERS) break;
-        CarState correctState = player.state;
 
-        if (!player.history.empty()) correctState = player.history.back();
+        CarState correctState = player.state;
+        if (!player.history.empty())
+            correctState = player.history.back();
+
         snap.cars[snap.count++] = correctState;
     }
 
-    ENetPacket* packet = enet_packet_create(&snap,sizeof(SnapshotPacket),ENET_PACKET_FLAG_UNSEQUENCED);
-
+    ENetPacket* packet = enet_packet_create(&snap, sizeof(SnapshotPacket), ENET_PACKET_FLAG_UNSEQUENCED);
     enet_host_broadcast(server, 0, packet);
+
+    if (hasChat) {
+        ENetPacket* chatPacket = enet_packet_create(&lastChat, sizeof(ChatPacket), ENET_PACKET_FLAG_RELIABLE);
+        enet_host_broadcast(server, 1, chatPacket);
+
+        hasChat = false;
+    }
 }
 
 
@@ -87,6 +100,13 @@ int main(){
             case ENET_EVENT_TYPE_RECEIVE: {
                 PacketType type = *(PacketType*)event.packet->data;
 
+                if (type == PacketType::Chat) {
+                    auto* p = (ChatPacket*)event.packet->data;
+                    messages.push_back(p->msg);
+
+                    lastChat = *p;
+                    hasChat = true;
+                }
                 if (type == PacketType::ClientState) {
                     auto* packet = (ClientStatePacket*)event.packet->data;
                     Player& p = players[event.peer];
